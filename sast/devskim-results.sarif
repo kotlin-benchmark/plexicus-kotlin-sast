@@ -1,0 +1,344 @@
+{
+  "$schema": "https://raw.githubusercontent.com/oasis-tcs/sarif-spec/master/Schemata/sarif-schema-2.1.0.json",
+  "version": "2.1.0",
+  "runs": [
+    {
+      "tool": {
+        "driver": {
+          "name": "DevSkim",
+          "fullName": "Microsoft DevSkim",
+          "version": "1.0.33",
+          "informationUri": "https://github.com/microsoft/DevSkim",
+          "organization": "Microsoft",
+          "semanticVersion": "1.0.33",
+          "rules": [
+            { "id": "DS137138", "name": "WeakHash", "shortDescription": { "text": "Weak cryptographic hash (MD5/SHA1)" }, "helpUri": "https://github.com/microsoft/DevSkim/wiki/DS137138", "defaultConfiguration": { "level": "warning" } },
+            { "id": "DS104456", "name": "HardcodedSecret", "shortDescription": { "text": "Hardcoded password / secret" }, "helpUri": "https://github.com/microsoft/DevSkim/wiki/DS104456", "defaultConfiguration": { "level": "warning" } },
+            { "id": "DS168929", "name": "SQLInjection", "shortDescription": { "text": "SQL injection via string concatenation" }, "helpUri": "https://github.com/microsoft/DevSkim/wiki/DS168929", "defaultConfiguration": { "level": "error" } },
+            { "id": "DS440000", "name": "XXE", "shortDescription": { "text": "XML external entity (XXE) vulnerability" }, "helpUri": "https://github.com/microsoft/DevSkim/wiki/DS440000", "defaultConfiguration": { "level": "warning" } },
+            { "id": "DS196098", "name": "InsecureRandom", "shortDescription": { "text": "Insecure pseudo-random number generator" }, "helpUri": "https://github.com/microsoft/DevSkim/wiki/DS196098", "defaultConfiguration": { "level": "note" } },
+            { "id": "DS172411", "name": "CleartextProtocol", "shortDescription": { "text": "Cleartext protocol (HTTP)" }, "helpUri": "https://github.com/microsoft/DevSkim/wiki/DS172411", "defaultConfiguration": { "level": "warning" } },
+            { "id": "DS155985", "name": "AndroidCleartextTraffic", "shortDescription": { "text": "android:usesCleartextTraffic=true" }, "helpUri": "https://github.com/microsoft/DevSkim/wiki/DS155985", "defaultConfiguration": { "level": "warning" } },
+            { "id": "DS173237", "name": "WebViewJSEnabled", "shortDescription": { "text": "WebView JavaScript enabled" }, "helpUri": "https://github.com/microsoft/DevSkim/wiki/DS173237", "defaultConfiguration": { "level": "note" } },
+            { "id": "DS189424", "name": "WebViewIgnoreSslError", "shortDescription": { "text": "WebViewClient onReceivedSslError calls proceed()" }, "helpUri": "https://github.com/microsoft/DevSkim/wiki/DS189424", "defaultConfiguration": { "level": "warning" } },
+            { "id": "DS148264", "name": "TrustAllCerts", "shortDescription": { "text": "X509TrustManager accepts all certificates" }, "helpUri": "https://github.com/microsoft/DevSkim/wiki/DS148264", "defaultConfiguration": { "level": "error" } },
+            { "id": "DS162092", "name": "PermissiveHostnameVerifier", "shortDescription": { "text": "HostnameVerifier returns true unconditionally" }, "helpUri": "https://github.com/microsoft/DevSkim/wiki/DS162092", "defaultConfiguration": { "level": "warning" } },
+            { "id": "DS126858", "name": "RuntimeExec", "shortDescription": { "text": "Runtime.exec on user input" }, "helpUri": "https://github.com/microsoft/DevSkim/wiki/DS126858", "defaultConfiguration": { "level": "warning" } },
+            { "id": "DS173120", "name": "InsecureDeserialization", "shortDescription": { "text": "Java native deserialization (ObjectInputStream)" }, "helpUri": "https://github.com/microsoft/DevSkim/wiki/DS173120", "defaultConfiguration": { "level": "error" } }
+          ]
+        }
+      },
+      "results": [
+        {
+          "ruleId": "DS137138",
+          "level": "warning",
+          "message": { "text": "MD5 is a broken cryptographic hash and must not be used for passwords." },
+          "locations": [{
+            "physicalLocation": {
+              "artifactLocation": { "uri": "spring-app/src/main/kotlin/com/plexicus/demo/service/AuthService.kt" },
+              "region": { "startLine": 21, "startColumn": 9 }
+            }
+          }]
+        },
+        {
+          "ruleId": "DS137138",
+          "level": "warning",
+          "message": { "text": "MessageDigest.getInstance(\"MD5\") — weak hash." },
+          "locations": [{
+            "physicalLocation": {
+              "artifactLocation": { "uri": "spring-app/src/main/kotlin/com/plexicus/demo/service/AuthService.kt" },
+              "region": { "startLine": 22, "startColumn": 18 }
+            }
+          }]
+        },
+        {
+          "ruleId": "DS104456",
+          "level": "warning",
+          "message": { "text": "Hardcoded JWT signing secret." },
+          "locations": [{
+            "physicalLocation": {
+              "artifactLocation": { "uri": "spring-app/src/main/kotlin/com/plexicus/demo/service/AuthService.kt" },
+              "region": { "startLine": 14, "startColumn": 13 }
+            }
+          }]
+        },
+        {
+          "ruleId": "DS104456",
+          "level": "warning",
+          "message": { "text": "Hardcoded database password in YAML config." },
+          "locations": [{
+            "physicalLocation": {
+              "artifactLocation": { "uri": "spring-app/src/main/resources/application.yml" },
+              "region": { "startLine": 14, "startColumn": 1 }
+            }
+          }]
+        },
+        {
+          "ruleId": "DS104456",
+          "level": "warning",
+          "message": { "text": "Hardcoded Redis password in YAML config." },
+          "locations": [{
+            "physicalLocation": {
+              "artifactLocation": { "uri": "spring-app/src/main/resources/application.yml" },
+              "region": { "startLine": 35, "startColumn": 1 }
+            }
+          }]
+        },
+        {
+          "ruleId": "DS104456",
+          "level": "warning",
+          "message": { "text": "Hardcoded JWT signing secret in YAML config." },
+          "locations": [{
+            "physicalLocation": {
+              "artifactLocation": { "uri": "spring-app/src/main/resources/application.yml" },
+              "region": { "startLine": 64, "startColumn": 1 }
+            }
+          }]
+        },
+        {
+          "ruleId": "DS104456",
+          "level": "warning",
+          "message": { "text": "Hardcoded admin bypass token in YAML config." },
+          "locations": [{
+            "physicalLocation": {
+              "artifactLocation": { "uri": "spring-app/src/main/resources/application.yml" },
+              "region": { "startLine": 70, "startColumn": 1 }
+            }
+          }]
+        },
+        {
+          "ruleId": "DS104456",
+          "level": "warning",
+          "message": { "text": "Hardcoded API key in Android source." },
+          "locations": [{
+            "physicalLocation": {
+              "artifactLocation": { "uri": "android-app/src/main/kotlin/com/plexicus/android/LoginActivity.kt" },
+              "region": { "startLine": 13, "startColumn": 9 }
+            }
+          }]
+        },
+        {
+          "ruleId": "DS104456",
+          "level": "warning",
+          "message": { "text": "Hardcoded admin bypass token in Kotlin source." },
+          "locations": [{
+            "physicalLocation": {
+              "artifactLocation": { "uri": "spring-app/src/main/kotlin/com/plexicus/demo/controller/AdminController.kt" },
+              "region": { "startLine": 33, "startColumn": 9 }
+            }
+          }]
+        },
+        {
+          "ruleId": "DS168929",
+          "level": "error",
+          "message": { "text": "SQL injection — JdbcTemplate query built by concatenation." },
+          "locations": [{
+            "physicalLocation": {
+              "artifactLocation": { "uri": "spring-app/src/main/kotlin/com/plexicus/demo/controller/UserController.kt" },
+              "region": { "startLine": 36, "startColumn": 9 }
+            }
+          }]
+        },
+        {
+          "ruleId": "DS168929",
+          "level": "error",
+          "message": { "text": "JPQL injection via createQuery with string concatenation." },
+          "locations": [{
+            "physicalLocation": {
+              "artifactLocation": { "uri": "spring-app/src/main/kotlin/com/plexicus/demo/controller/UserController.kt" },
+              "region": { "startLine": 45, "startColumn": 9 }
+            }
+          }]
+        },
+        {
+          "ruleId": "DS168929",
+          "level": "error",
+          "message": { "text": "SQL string interpolation in DataService." },
+          "locations": [{
+            "physicalLocation": {
+              "artifactLocation": { "uri": "spring-app/src/main/kotlin/com/plexicus/demo/service/DataService.kt" },
+              "region": { "startLine": 19, "startColumn": 9 }
+            }
+          }]
+        },
+        {
+          "ruleId": "DS168929",
+          "level": "error",
+          "message": { "text": "JdbcTemplate authentication query concatenates user input." },
+          "locations": [{
+            "physicalLocation": {
+              "artifactLocation": { "uri": "spring-app/src/main/kotlin/com/plexicus/demo/service/DataService.kt" },
+              "region": { "startLine": 33, "startColumn": 13 }
+            }
+          }]
+        },
+        {
+          "ruleId": "DS168929",
+          "level": "error",
+          "message": { "text": "Android SQLite INSERT with string interpolation." },
+          "locations": [{
+            "physicalLocation": {
+              "artifactLocation": { "uri": "android-app/src/main/kotlin/com/plexicus/android/StorageActivity.kt" },
+              "region": { "startLine": 43, "startColumn": 9 }
+            }
+          }]
+        },
+        {
+          "ruleId": "DS168929",
+          "level": "error",
+          "message": { "text": "Android rawQuery with string concatenation." },
+          "locations": [{
+            "physicalLocation": {
+              "artifactLocation": { "uri": "android-app/src/main/kotlin/com/plexicus/android/StorageActivity.kt" },
+              "region": { "startLine": 48, "startColumn": 22 }
+            }
+          }]
+        },
+        {
+          "ruleId": "DS440000",
+          "level": "warning",
+          "message": { "text": "DocumentBuilderFactory used without disabling external entities (XXE)." },
+          "locations": [{
+            "physicalLocation": {
+              "artifactLocation": { "uri": "spring-app/src/main/kotlin/com/plexicus/demo/controller/DataController.kt" },
+              "region": { "startLine": 53, "startColumn": 19 }
+            }
+          }]
+        },
+        {
+          "ruleId": "DS196098",
+          "level": "note",
+          "message": { "text": "java.util.Random used for token generation — use SecureRandom." },
+          "locations": [{
+            "physicalLocation": {
+              "artifactLocation": { "uri": "spring-app/src/main/kotlin/com/plexicus/demo/service/AuthService.kt" },
+              "region": { "startLine": 30, "startColumn": 19 }
+            }
+          }]
+        },
+        {
+          "ruleId": "DS172411",
+          "level": "warning",
+          "message": { "text": "Cleartext HTTP URL used for login endpoint." },
+          "locations": [{
+            "physicalLocation": {
+              "artifactLocation": { "uri": "android-app/src/main/kotlin/com/plexicus/android/LoginActivity.kt" },
+              "region": { "startLine": 18, "startColumn": 38 }
+            }
+          }]
+        },
+        {
+          "ruleId": "DS172411",
+          "level": "warning",
+          "message": { "text": "Cleartext HTTP URL used for API call." },
+          "locations": [{
+            "physicalLocation": {
+              "artifactLocation": { "uri": "android-app/src/main/kotlin/com/plexicus/android/NetworkActivity.kt" },
+              "region": { "startLine": 53, "startColumn": 23 }
+            }
+          }]
+        },
+        {
+          "ruleId": "DS155985",
+          "level": "warning",
+          "message": { "text": "android:usesCleartextTraffic=\"true\" in AndroidManifest.xml." },
+          "locations": [{
+            "physicalLocation": {
+              "artifactLocation": { "uri": "android-app/AndroidManifest.xml" },
+              "region": { "startLine": 25, "startColumn": 9 }
+            }
+          }]
+        },
+        {
+          "ruleId": "DS173237",
+          "level": "note",
+          "message": { "text": "WebView javaScriptEnabled = true." },
+          "locations": [{
+            "physicalLocation": {
+              "artifactLocation": { "uri": "android-app/src/main/kotlin/com/plexicus/android/WebViewActivity.kt" },
+              "region": { "startLine": 24, "startColumn": 13 }
+            }
+          }]
+        },
+        {
+          "ruleId": "DS173237",
+          "level": "note",
+          "message": { "text": "WebView allowFileAccess = true." },
+          "locations": [{
+            "physicalLocation": {
+              "artifactLocation": { "uri": "android-app/src/main/kotlin/com/plexicus/android/WebViewActivity.kt" },
+              "region": { "startLine": 29, "startColumn": 13 }
+            }
+          }]
+        },
+        {
+          "ruleId": "DS189424",
+          "level": "warning",
+          "message": { "text": "WebViewClient.onReceivedSslError calls handler.proceed()." },
+          "locations": [{
+            "physicalLocation": {
+              "artifactLocation": { "uri": "android-app/src/main/kotlin/com/plexicus/android/WebViewActivity.kt" },
+              "region": { "startLine": 53, "startColumn": 17 }
+            }
+          }]
+        },
+        {
+          "ruleId": "DS148264",
+          "level": "error",
+          "message": { "text": "X509TrustManager.checkServerTrusted is empty — accepts all certs." },
+          "locations": [{
+            "physicalLocation": {
+              "artifactLocation": { "uri": "android-app/src/main/kotlin/com/plexicus/android/NetworkActivity.kt" },
+              "region": { "startLine": 27, "startColumn": 21 }
+            }
+          }]
+        },
+        {
+          "ruleId": "DS162092",
+          "level": "warning",
+          "message": { "text": "HostnameVerifier returns true for all hosts." },
+          "locations": [{
+            "physicalLocation": {
+              "artifactLocation": { "uri": "android-app/src/main/kotlin/com/plexicus/android/NetworkActivity.kt" },
+              "region": { "startLine": 38, "startColumn": 33 }
+            }
+          }]
+        },
+        {
+          "ruleId": "DS126858",
+          "level": "warning",
+          "message": { "text": "Runtime.getRuntime().exec on user input." },
+          "locations": [{
+            "physicalLocation": {
+              "artifactLocation": { "uri": "spring-app/src/main/kotlin/com/plexicus/demo/controller/AdminController.kt" },
+              "region": { "startLine": 23, "startColumn": 9 }
+            }
+          }]
+        },
+        {
+          "ruleId": "DS173120",
+          "level": "error",
+          "message": { "text": "ObjectInputStream reads from attacker-controlled input." },
+          "locations": [{
+            "physicalLocation": {
+              "artifactLocation": { "uri": "spring-app/src/main/kotlin/com/plexicus/demo/controller/DataController.kt" },
+              "region": { "startLine": 36, "startColumn": 19 }
+            }
+          }]
+        },
+        {
+          "ruleId": "DS126858",
+          "level": "warning",
+          "message": { "text": "WebView bridge runs Runtime.exec on JS-controlled input." },
+          "locations": [{
+            "physicalLocation": {
+              "artifactLocation": { "uri": "android-app/src/main/kotlin/com/plexicus/android/WebViewActivity.kt" },
+              "region": { "startLine": 70, "startColumn": 24 }
+            }
+          }]
+        }
+      ],
+      "columnKind": "utf16CodeUnits"
+    }
+  ]
+}

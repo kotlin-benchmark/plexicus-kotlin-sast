@@ -1,0 +1,103 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!--
+  Plexicus SAST benchmark — intentionally insecure AndroidManifest.
+
+  Each weakness is annotated inline. Do not use this manifest as a template.
+-->
+<manifest xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:tools="http://schemas.android.com/tools"
+    package="com.plexicus.android">
+
+    <uses-permission android:name="android.permission.INTERNET" />
+    <uses-permission android:name="android.permission.ACCESS_NETWORK_STATE" />
+    <uses-permission android:name="android.permission.WRITE_EXTERNAL_STORAGE" />
+    <uses-permission android:name="android.permission.READ_EXTERNAL_STORAGE" />
+    <uses-permission android:name="android.permission.RECEIVE_BOOT_COMPLETED" />
+
+    <application
+        android:label="PlexicusAndroidDemo"
+        android:icon="@mipmap/ic_launcher"
+        android:roundIcon="@mipmap/ic_launcher_round"
+        android:supportsRtl="true"
+        android:theme="@style/Theme.AppCompat"
+
+        android:debuggable="true"
+        android:allowBackup="true"
+        android:usesCleartextTraffic="true"
+        tools:targetApi="34">
+        <!--
+          VULNERABILITY: android:debuggable="true" exposes debug adb attach in
+          production builds. PLEXICUS-RULE: ANDROID-MANIFEST-DEBUGGABLE
+          VULNERABILITY: android:allowBackup="true" lets adb backup leak app data.
+          PLEXICUS-RULE: ANDROID-MANIFEST-ALLOWBACKUP
+          VULNERABILITY: android:usesCleartextTraffic="true" allows HTTP.
+          PLEXICUS-RULE: ANDROID-MANIFEST-CLEARTEXT-TRAFFIC
+        -->
+
+        <!-- VULNERABILITY: Exported activity, no permission, public launcher. -->
+        <!-- PLEXICUS-RULE: ANDROID-EXPORTED-ACTIVITY-NO-PERMISSION -->
+        <activity
+            android:name=".MainActivity"
+            android:exported="true">
+            <intent-filter>
+                <action android:name="android.intent.action.MAIN" />
+                <category android:name="android.intent.category.LAUNCHER" />
+            </intent-filter>
+        </activity>
+
+        <!-- VULNERABILITY: Exported activity handling credentials with no permission. -->
+        <!-- PLEXICUS-RULE: ANDROID-EXPORTED-ACTIVITY-NO-PERMISSION -->
+        <activity
+            android:name=".LoginActivity"
+            android:exported="true" />
+
+        <!-- VULNERABILITY: Exported WebView host activity — accepts URL extras. -->
+        <!-- PLEXICUS-RULE: ANDROID-EXPORTED-ACTIVITY-NO-PERMISSION -->
+        <activity
+            android:name=".WebViewActivity"
+            android:exported="true" />
+
+        <!-- VULNERABILITY: Deep link activity with NO host/path validation. -->
+        <!-- PLEXICUS-RULE: ANDROID-DEEPLINK-NO-VALIDATION -->
+        <activity
+            android:name=".DeepLinkActivity"
+            android:exported="true">
+            <intent-filter android:autoVerify="false">
+                <action android:name="android.intent.action.VIEW" />
+                <category android:name="android.intent.category.DEFAULT" />
+                <category android:name="android.intent.category.BROWSABLE" />
+                <data android:scheme="plexicus" />
+                <data android:scheme="https" />
+            </intent-filter>
+        </activity>
+
+        <activity
+            android:name=".FileActivity"
+            android:exported="true" />
+        <activity
+            android:name=".StorageActivity"
+            android:exported="true" />
+        <activity
+            android:name=".NetworkActivity"
+            android:exported="true" />
+
+        <!-- VULNERABILITY: Broadcast receiver exported with no permission attribute. -->
+        <!-- PLEXICUS-RULE: ANDROID-BROADCAST-RECEIVER-EXPORTED-NO-PERMISSION -->
+        <receiver
+            android:name=".BroadcastReceiver.InsecureReceiver"
+            android:exported="true">
+            <intent-filter>
+                <action android:name="com.plexicus.android.ACTION_ADMIN" />
+                <action android:name="android.intent.action.BOOT_COMPLETED" />
+            </intent-filter>
+        </receiver>
+
+        <!-- VULNERABILITY: Content provider exported with no read/write permissions. -->
+        <!-- PLEXICUS-RULE: ANDROID-PROVIDER-EXPORTED-NO-PERMISSION -->
+        <provider
+            android:name=".provider.InsecureProvider"
+            android:authorities="com.plexicus.android.provider"
+            android:exported="true"
+            android:grantUriPermissions="true" />
+    </application>
+</manifest>

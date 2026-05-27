@@ -1,0 +1,540 @@
+# Plexicus SAST — Kotlin custom rule pack
+#
+# This file is the source-of-truth for the Plexicus Kotlin rule pack used to
+# benchmark this repository. Each rule includes its framework binding
+# (spring-boot or android), severity, CWE, OWASP mapping, and a pattern that
+# describes the sink the engine should flag.
+#
+# The rules are split into two sections for clarity:
+#   1) Spring Boot (server-side Kotlin) — ✅ Full
+#   2) Android (Kotlin / AndroidX)      — ⚠️ Partial / 🔬 In Development
+
+version: "1.0"
+language: kotlin
+metadata:
+  language_feature_id: F-LANG-03
+  status: P1/Partial
+  authors:
+    - "Plexicus Security Research"
+
+rulesets:
+
+  # =================================================================
+  # 1. Spring Boot rules — ✅ Full / Production-validated
+  # =================================================================
+  spring-boot:
+    framework: spring-boot
+    description: "Server-side Kotlin running on Spring Boot 3.x."
+    status: full
+    rules:
+
+      - id: SPRING-SQLI-JDBC-TEMPLATE
+        name: "SQL injection in JdbcTemplate query"
+        language: kotlin
+        framework: spring-boot
+        severity: CRITICAL
+        cwe: CWE-89
+        owasp: "A03:2021"
+        pattern: |
+          jdbc.queryForList("..." + ${TAINT} + "...")
+        message: >
+          JdbcTemplate query built by string concatenation with a tainted
+          variable. Use parameterized queries (positional `?` or named
+          `:param` bindings).
+
+      - id: SPRING-JPA-NATIVE-CONCAT
+        name: "@Query(nativeQuery=true) built by concatenation"
+        language: kotlin
+        framework: spring-boot
+        severity: CRITICAL
+        cwe: CWE-89
+        owasp: "A03:2021"
+        pattern: |
+          @Query(value = "..." + ${TAINT} + "...", nativeQuery = true)
+        message: >
+          Native @Query strings must not concatenate user input. Use
+          `:param` bindings.
+
+      - id: SPRING-JPA-JPQL-CONCAT
+        name: "JPQL built by concatenation"
+        language: kotlin
+        framework: spring-boot
+        severity: HIGH
+        cwe: CWE-89
+        owasp: "A03:2021"
+        pattern: |
+          em.createQuery("..." + ${TAINT} + "...", *)
+        message: >
+          JPQL injection — pass parameters via `setParameter(...)`.
+
+      - id: SPRING-CMD-INJECTION-RUNTIME-EXEC
+        name: "Command injection via Runtime.exec"
+        language: kotlin
+        framework: spring-boot
+        severity: CRITICAL
+        cwe: CWE-78
+        owasp: "A03:2021"
+        pattern: |
+          Runtime.getRuntime().exec(${TAINT})
+        message: >
+          Direct Runtime.exec on user input is RCE. Use ProcessBuilder with
+          fixed argv and validated parameters.
+
+      - id: SPRING-CMD-INJECTION-PROCESS-BUILDER
+        name: "Command injection via ProcessBuilder shell invocation"
+        language: kotlin
+        framework: spring-boot
+        severity: CRITICAL
+        cwe: CWE-78
+        owasp: "A03:2021"
+        pattern: |
+          ProcessBuilder("sh", "-c", *${TAINT}*)
+        message: >
+          Avoid `sh -c` with interpolated user input — use the argv form.
+
+      - id: SPRING-AUTH-HARDCODED-CREDS
+        name: "Hardcoded credentials in authentication path"
+        language: kotlin
+        framework: spring-boot
+        severity: CRITICAL
+        cwe: CWE-798
+        owasp: "A07:2021"
+        pattern: |
+          if (${USER} == "admin" && ${PWD} == "admin123") ...
+        message: >
+          Hardcoded credentials. Move to a secrets store + database-backed
+          user identity.
+
+      - id: SPRING-AUTH-HARDCODED-JWT-SECRET
+        name: "Hardcoded JWT signing secret"
+        language: kotlin
+        framework: spring-boot
+        severity: CRITICAL
+        cwe: CWE-798
+        owasp: "A02:2021"
+        pattern: |
+          private val jwtSecret: String = "..."
+        message: >
+          JWT secret must come from environment / secrets manager.
+
+      - id: SPRING-AUTH-JWT-ALG-NONE
+        name: "JWT verification accepts alg:none"
+        language: kotlin
+        framework: spring-boot
+        severity: HIGH
+        cwe: CWE-347
+        owasp: "A07:2021"
+        message: >
+          The verifier must reject unsigned tokens. Use parserBuilder()
+          with required algorithm.
+
+      - id: SPRING-CRYPTO-MD5-PASSWORD
+        name: "MD5/SHA1 used to hash passwords"
+        language: kotlin
+        framework: spring-boot
+        severity: HIGH
+        cwe: CWE-327
+        owasp: "A02:2021"
+        pattern: |
+          MessageDigest.getInstance("MD5")
+        message: >
+          Use BCrypt / Argon2id, not MD5.
+
+      - id: SPRING-CRYPTO-INSECURE-RANDOM
+        name: "java.util.Random used for security-sensitive token"
+        language: kotlin
+        framework: spring-boot
+        severity: MEDIUM
+        cwe: CWE-338
+        owasp: "A02:2021"
+        pattern: |
+          val rng = Random()
+        message: >
+          Use SecureRandom for security-sensitive randomness.
+
+      - id: SPRING-DESERIALIZE-OIS
+        name: "ObjectInputStream over attacker-controlled bytes"
+        language: kotlin
+        framework: spring-boot
+        severity: CRITICAL
+        cwe: CWE-502
+        owasp: "A08:2021"
+        pattern: |
+          ObjectInputStream(${TAINT})
+        message: >
+          Java native deserialization on untrusted input. Switch to typed
+          JSON.
+
+      - id: SPRING-XSS-RESPONSE-ENTITY-HTML
+        name: "Reflected XSS via ResponseEntity<String> text/html"
+        language: kotlin
+        framework: spring-boot
+        severity: HIGH
+        cwe: CWE-79
+        owasp: "A03:2021"
+        message: >
+          Returning user input as text/html without escaping is XSS.
+
+      - id: SPRING-XXE-DOCUMENT-BUILDER
+        name: "DocumentBuilderFactory without entity hardening"
+        language: kotlin
+        framework: spring-boot
+        severity: HIGH
+        cwe: CWE-611
+        owasp: "A05:2021"
+        pattern: |
+          DocumentBuilderFactory.newInstance()
+        message: >
+          Disable DTDs and external entities on DocumentBuilderFactory.
+
+      - id: SPRING-SSRF-RESTTEMPLATE
+        name: "SSRF via RestTemplate with user-controlled URL"
+        language: kotlin
+        framework: spring-boot
+        severity: HIGH
+        cwe: CWE-918
+        owasp: "A10:2021"
+        pattern: |
+          restTemplate.getForObject(${TAINT}, *)
+        message: >
+          Server-side fetch on user input — restrict by allow-list.
+
+      - id: SPRING-SSTI-THYMELEAF-TEMPLATE
+        name: "Thymeleaf template name from user input"
+        language: kotlin
+        framework: spring-boot
+        severity: HIGH
+        cwe: CWE-1336
+        owasp: "A03:2021"
+        pattern: |
+          ModelAndView(${TAINT})
+        message: >
+          Server-side template injection — never use user input as template
+          name.
+
+      - id: SPRING-PATH-TRAVERSAL
+        name: "Path traversal via Paths.get / File()"
+        language: kotlin
+        framework: spring-boot
+        severity: HIGH
+        cwe: CWE-22
+        owasp: "A01:2021"
+        pattern: |
+          Paths.get(${ROOT}, ${TAINT})
+        message: >
+          Normalize and assert prefix against base directory.
+
+      - id: SPRING-ZIP-SLIP
+        name: "Zip slip on archive extraction"
+        language: kotlin
+        framework: spring-boot
+        severity: HIGH
+        cwe: CWE-22
+        owasp: "A01:2021"
+        message: >
+          Resolve each entry against the extraction root and require
+          startsWith(root).
+
+      - id: SPRING-MASS-ASSIGNMENT
+        name: "@RequestBody binds @Entity directly"
+        language: kotlin
+        framework: spring-boot
+        severity: HIGH
+        cwe: CWE-915
+        owasp: "A08:2021"
+        message: >
+          Use a DTO. Never bind a JPA entity (especially with a `role` field)
+          from request bodies.
+
+      - id: SPRING-MASS-ASSIGNMENT-ROLE
+        name: "Mass-assignable role field"
+        language: kotlin
+        framework: spring-boot
+        severity: CRITICAL
+        cwe: CWE-915
+        owasp: "A01:2021"
+        message: >
+          The role field is mass-assignable through @RequestBody.
+
+      - id: SPRING-AUTHZ-IDOR
+        name: "ID-based fetch without ownership check"
+        language: kotlin
+        framework: spring-boot
+        severity: HIGH
+        cwe: CWE-639
+        owasp: "A01:2021"
+        message: >
+          Compare the resource's owner to the authenticated principal.
+
+      - id: SPRING-AUTHZ-MISSING-PREAUTHORIZE
+        name: "Sensitive endpoint missing @PreAuthorize"
+        language: kotlin
+        framework: spring-boot
+        severity: HIGH
+        cwe: CWE-862
+        owasp: "A01:2021"
+        message: >
+          Annotate admin endpoints with @PreAuthorize("hasRole('ADMIN')").
+
+      - id: SPRING-SEC-CSRF-DISABLED
+        name: "CSRF protection disabled"
+        language: kotlin
+        framework: spring-boot
+        severity: HIGH
+        cwe: CWE-352
+        owasp: "A01:2021"
+        pattern: |
+          .csrf { it.disable() }
+        message: >
+          Enable CSRF or use stateless cookie-less authentication.
+
+      - id: SPRING-SEC-PERMITALL
+        name: "permitAll() on every endpoint"
+        language: kotlin
+        framework: spring-boot
+        severity: CRITICAL
+        cwe: CWE-862
+        owasp: "A01:2021"
+        message: >
+          permitAll() globally is missing authorization.
+
+      - id: SPRING-SEC-NOOP-PASSWORD-ENCODER
+        name: "NoOpPasswordEncoder"
+        language: kotlin
+        framework: spring-boot
+        severity: CRITICAL
+        cwe: CWE-256
+        owasp: "A02:2021"
+        pattern: |
+          NoOpPasswordEncoder.getInstance()
+        message: >
+          Plaintext password storage. Use BCryptPasswordEncoder.
+
+      - id: SPRING-SEC-CORS-WILDCARD
+        name: "CORS wildcard origin with credentials"
+        language: kotlin
+        framework: spring-boot
+        severity: HIGH
+        cwe: CWE-942
+        owasp: "A05:2021"
+        message: >
+          allowedOrigins = listOf(\"*\") combined with allowCredentials=true
+          violates the CORS spec.
+
+      - id: SPRING-LOG-SENSITIVE-DATA
+        name: "Sensitive data logged"
+        language: kotlin
+        framework: spring-boot
+        severity: MEDIUM
+        cwe: CWE-532
+        owasp: "A09:2021"
+        message: >
+          Never log passwords, tokens, or PII.
+
+      - id: SPRING-CONFIG-STACKTRACE-ALWAYS
+        name: "Stack traces returned to clients"
+        language: kotlin
+        framework: spring-boot
+        severity: MEDIUM
+        cwe: CWE-209
+        owasp: "A05:2021"
+        message: >
+          server.error.include-stacktrace must be 'never' in production.
+
+      - id: SPRING-ACTUATOR-WILDCARD-EXPOSE
+        name: "Actuator endpoints exposed via wildcard"
+        language: kotlin
+        framework: spring-boot
+        severity: HIGH
+        cwe: CWE-200
+        owasp: "A05:2021"
+        message: >
+          management.endpoints.web.exposure.include must list specific
+          endpoints, never \"*\".
+
+  # =================================================================
+  # 2. Android rules — ⚠️ Partial / 🔬 In Development
+  # =================================================================
+  android:
+    framework: android
+    description: "Kotlin Android applications (AndroidX)."
+    status: partial
+    rules:
+
+      - id: ANDROID-EXPORTED-ACTIVITY-NO-PERMISSION
+        name: "Exported activity without permission attribute"
+        language: kotlin
+        framework: android
+        severity: HIGH
+        cwe: CWE-926
+        owasp_masvs: "MSTG-PLATFORM-11"
+        target: AndroidManifest.xml
+        pattern: |
+          <activity android:exported="true" /* no android:permission */ />
+        message: >
+          Exported activity must be gated by android:permission.
+        status: partial
+
+      - id: ANDROID-DEEPLINK-NO-VALIDATION
+        name: "Deep link without host/path validation"
+        language: kotlin
+        framework: android
+        severity: HIGH
+        cwe: CWE-939
+        owasp_masvs: "MSTG-PLATFORM-3"
+        message: >
+          Validate intent.data.host and intent.data.path against an
+          allow-list and prefer App Links.
+        status: partial
+
+      - id: ANDROID-INTENT-UNVALIDATED-FORWARD
+        name: "Unvalidated intent forwarded into startActivity"
+        language: kotlin
+        framework: android
+        severity: HIGH
+        cwe: CWE-940
+        message: >
+          Intent action/data taken from external Intent and forwarded
+          without validation.
+        status: partial
+
+      - id: ANDROID-LOG-SENSITIVE-DATA
+        name: "Log.d with token/password/PII"
+        language: kotlin
+        framework: android
+        severity: MEDIUM
+        cwe: CWE-532
+        message: >
+          Logs are readable by other apps on rooted devices and during
+          ADB attach. Never log secrets.
+        status: shipped
+
+      - id: ANDROID-HARDCODED-API-KEY
+        name: "Hardcoded API key in source"
+        language: kotlin
+        framework: android
+        severity: CRITICAL
+        cwe: CWE-798
+        pattern: |
+          const val API_KEY: String = "..."
+        message: >
+          Move API keys to a server-issued ephemeral token model.
+        status: shipped
+
+      - id: ANDROID-STORAGE-SHAREDPREFS-PLAINTEXT
+        name: "Plaintext credentials in SharedPreferences"
+        language: kotlin
+        framework: android
+        severity: HIGH
+        cwe: CWE-312
+        message: >
+          Use EncryptedSharedPreferences from androidx.security:security-crypto.
+        status: partial
+
+      - id: ANDROID-STORAGE-SQLITE-UNENCRYPTED
+        name: "SQLite database without encryption"
+        language: kotlin
+        framework: android
+        severity: HIGH
+        cwe: CWE-311
+        message: >
+          Use SQLCipher or do not store secrets locally.
+        status: partial
+
+      - id: ANDROID-SQLI-RAW-QUERY
+        name: "rawQuery with string concatenation"
+        language: kotlin
+        framework: android
+        severity: CRITICAL
+        cwe: CWE-89
+        pattern: |
+          db.rawQuery("..." + ${TAINT} + "...", null)
+        message: >
+          Use the parameterized form: rawQuery(\"... ?\", arrayOf(value)).
+        status: shipped
+
+      - id: ANDROID-WEBVIEW-JS-ENABLED
+        name: "WebView JavaScript enabled"
+        language: kotlin
+        framework: android
+        severity: HIGH
+        cwe: CWE-79
+        message: >
+          Disable JS unless explicitly required.
+        status: partial
+
+      - id: ANDROID-WEBVIEW-FILE-ACCESS
+        name: "WebView allowFileAccess = true"
+        language: kotlin
+        framework: android
+        severity: HIGH
+        cwe: CWE-200
+        message: >
+          Disable file:// access from WebView when not required.
+        status: in_development
+
+      - id: ANDROID-WEBVIEW-ADD-JS-INTERFACE
+        name: "addJavascriptInterface with broad bridge object"
+        language: kotlin
+        framework: android
+        severity: HIGH
+        cwe: CWE-749
+        message: >
+          Only expose methods annotated with @JavascriptInterface and
+          minimize the bridge surface.
+        status: partial
+
+      - id: ANDROID-WEBVIEW-IGNORE-SSL-ERRORS
+        name: "WebViewClient.onReceivedSslError calls proceed()"
+        language: kotlin
+        framework: android
+        severity: HIGH
+        cwe: CWE-295
+        pattern: |
+          override fun onReceivedSslError(*) { handler?.proceed() }
+        message: >
+          Always cancel SSL errors; never proceed.
+        status: partial
+
+      - id: ANDROID-NETWORK-TRUST-ALL-CERTS
+        name: "X509TrustManager accepts every certificate"
+        language: kotlin
+        framework: android
+        severity: CRITICAL
+        cwe: CWE-295
+        message: >
+          Use default trust manager. Pin certificates with OkHttp's
+          CertificatePinner.
+        status: in_development
+
+      - id: ANDROID-NETWORK-PERMISSIVE-HOSTNAME-VERIFIER
+        name: "HostnameVerifier returns true unconditionally"
+        language: kotlin
+        framework: android
+        severity: HIGH
+        cwe: CWE-297
+        message: >
+          Use OkHostnameVerifier or the default verifier.
+        status: in_development
+
+      - id: ANDROID-BROADCAST-RECEIVER-NO-PERMISSION-CHECK
+        name: "BroadcastReceiver onReceive has no permission check"
+        language: kotlin
+        framework: android
+        severity: HIGH
+        cwe: CWE-925
+        message: >
+          Either mark the receiver android:exported=false or require a
+          signature-level permission on it.
+        status: in_development
+
+      - id: ANDROID-MANIFEST-CLEARTEXT-TRAFFIC
+        name: "android:usesCleartextTraffic=\"true\""
+        language: kotlin
+        framework: android
+        severity: HIGH
+        cwe: CWE-319
+        target: AndroidManifest.xml
+        message: >
+          Set usesCleartextTraffic to false and use a NetworkSecurityConfig.
+        status: shipped

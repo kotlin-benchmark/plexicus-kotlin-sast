@@ -1,0 +1,77 @@
+# Plexicus Spring Boot demo — intentionally insecure application configuration.
+# All values prefixed DEMO_VULN_ are placeholders with no real value. Do NOT
+# treat any string in this file as an actual secret.
+
+spring:
+  application:
+    name: plexicus-spring-demo
+
+  datasource:
+    # VULNERABILITY: Hardcoded database credentials in source-controlled YAML.
+    # PLEXICUS-RULE: SPRING-CONFIG-HARDCODED-DB-PASSWORD
+    url: jdbc:postgresql://localhost:5432/plexicus_demo
+    username: plexicus_demo
+    password: DEMO_VULN_DB_PASSWORD_NOT_REAL
+    driver-class-name: org.postgresql.Driver
+
+  jpa:
+    # VULNERABILITY: show-sql in production logs leaks query text including
+    # user-controlled bind parameters once string concatenation is in use.
+    # PLEXICUS-RULE: SPRING-CONFIG-SHOW-SQL
+    show-sql: true
+    hibernate:
+      ddl-auto: update
+    properties:
+      hibernate:
+        format_sql: true
+
+  redis:
+    host: localhost
+    port: 6379
+    # VULNERABILITY: Hardcoded Redis password.
+    # PLEXICUS-RULE: SPRING-CONFIG-HARDCODED-REDIS-PASSWORD
+    password: DEMO_VULN_REDIS_PASS_NOT_REAL
+
+  thymeleaf:
+    cache: false
+    prefix: classpath:/templates/
+    suffix: .html
+
+server:
+  port: 8080
+  error:
+    # VULNERABILITY: Stack traces returned to clients on every error.
+    # PLEXICUS-RULE: SPRING-CONFIG-STACKTRACE-ALWAYS
+    include-stacktrace: always
+    include-message: always
+    include-binding-errors: always
+
+management:
+  endpoints:
+    web:
+      exposure:
+        # VULNERABILITY: All actuator endpoints (env, beans, heapdump, ...) exposed
+        # over HTTP without auth. PLEXICUS-RULE: SPRING-ACTUATOR-WILDCARD-EXPOSE
+        include: "*"
+      base-path: /actuator
+  endpoint:
+    health:
+      show-details: always
+    env:
+      show-values: ALWAYS
+
+logging:
+  level:
+    org.springframework.web: DEBUG
+    com.plexicus.demo: DEBUG
+
+app:
+  jwt:
+    # VULNERABILITY: Hardcoded JWT signing secret in configuration.
+    # PLEXICUS-RULE: SPRING-CONFIG-HARDCODED-JWT-SECRET
+    secret: DEMO_VULN_JWT_SECRET_NOT_REAL
+    issuer: plexicus-demo
+  admin:
+    # VULNERABILITY: Hardcoded admin bypass token in configuration mirroring the
+    # value in AdminController. PLEXICUS-RULE: SPRING-CONFIG-HARDCODED-ADMIN-TOKEN
+    bypassToken: DEMO_VULN_ADMIN_BYPASS_TOKEN_NOT_REAL

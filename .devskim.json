@@ -1,0 +1,56 @@
+{
+  "$schema": "https://raw.githubusercontent.com/microsoft/DevSkim/main/schemas/devskim.schema.json",
+  "version": "1.0.0",
+  "name": "plexicus-kotlin-sast",
+  "description": "DevSkim configuration for the Plexicus Kotlin SAST benchmark (Spring Boot + Android).",
+  "language_extensions": {
+    "kotlin": [".kt", ".kts"],
+    "xml": [".xml"],
+    "yaml": [".yml", ".yaml"]
+  },
+  "scan": {
+    "include": [
+      "spring-app/src/**/*.kt",
+      "spring-app/src/**/*.kts",
+      "spring-app/src/**/*.yml",
+      "android-app/src/**/*.kt",
+      "android-app/**/AndroidManifest.xml"
+    ],
+    "exclude": [
+      "**/build/**",
+      "**/.gradle/**",
+      "**/node_modules/**",
+      "**/.git/**"
+    ]
+  },
+  "rules": {
+    "enabled_categories": [
+      "Cryptography",
+      "Authentication",
+      "Authorization",
+      "InputValidation",
+      "Networking",
+      "Secrets",
+      "Configuration",
+      "DangerousAPI",
+      "InsecureRandom"
+    ],
+    "ignore_default_rules": false,
+    "severity_threshold": "best-practice"
+  },
+  "output": {
+    "format": "sarif",
+    "file": "sast/devskim-results.sarif"
+  },
+  "framework_hints": {
+    "kotlin": ["spring-boot", "android", "androidx"]
+  },
+  "rule_overrides": {
+    "DS104456": { "severity": "important" },
+    "DS137138": { "severity": "important" },
+    "DS168929": { "severity": "critical" },
+    "DS440000": { "severity": "important" },
+    "DS196098": { "severity": "moderate" },
+    "DS172411": { "severity": "important" }
+  }
+}

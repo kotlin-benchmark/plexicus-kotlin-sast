@@ -1,0 +1,112 @@
+# Android-specific SAST pipeline.
+#
+# Plexicus Android Kotlin rules are P1/Partial — we corroborate findings with
+# established Android-focused tooling (MobSF static scan + Semgrep mobile rules)
+# so the demo proves that the Android-specific findings in this repo would also
+# be flagged by existing community tooling. This makes the benchmark useful for
+# rule-tuning regression testing.
+name: Android SAST (MobSF + Semgrep)
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+    branches: [main]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  security-events: write
+  actions: read
+
+jobs:
+  semgrep-android:
+    name: Semgrep — Android Kotlin rules
+    runs-on: ubuntu-latest
+    container:
+      image: semgrep/semgrep
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Run Semgrep with Android rule packs
+        run: |
+          semgrep scan \
+            --config p/kotlin \
+            --config p/mobile \
+            --config p/android \
+            --sarif --output semgrep-android.sarif \
+            android-app/ || true
+
+      - name: Upload SARIF
+        if: always()
+        uses: github/codeql-action/upload-sarif@v3
+        with:
+          sarif_file: semgrep-android.sarif
+          category: semgrep-android
+
+      - name: Archive SARIF
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: semgrep-android-sarif
+          path: semgrep-android.sarif
+
+  mobsf-static:
+    name: MobSF — static APK analysis
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Set up JDK 21
+        uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: "21"
+
+      - name: Build debug APK
+        working-directory: android-app
+        run: |
+          chmod +x ./gradlew || true
+          ./gradlew :assembleDebug --no-daemon || \
+            echo "Gradle build placeholder — emulator/SDK not in CI runner; relying on source scan."
+
+      - name: Start MobSF (docker)
+        run: |
+          docker run -d --name mobsf -p 8000:8000 opensecurity/mobile-security-framework-mobsf:latest
+          # Give MobSF time to spin up.
+          for i in $(seq 1 30); do
+            if curl -sf http://127.0.0.1:8000/api_docs > /dev/null; then
+              echo "MobSF ready"
+              break
+            fi
+            sleep 5
+          done
+
+      - name: Run MobSF static scan
+        env:
+          MOBSF_API_KEY: ${{ secrets.MOBSF_API_KEY }}
+        run: |
+          APK=$(find android-app -name "*.apk" | head -n1)
+          if [ -z "$APK" ]; then
+            echo "::warning::No APK built — skipping MobSF binary scan, source scan provided by Semgrep."
+            exit 0
+          fi
+          curl -sf -F "file=@${APK}" -H "Authorization: ${MOBSF_API_KEY}" \
+            http://127.0.0.1:8000/api/v1/upload | tee mobsf-upload.json
+          HASH=$(jq -r .hash mobsf-upload.json)
+          curl -sf -X POST -H "Authorization: ${MOBSF_API_KEY}" \
+            -d "hash=${HASH}&scan_type=apk" \
+            http://127.0.0.1:8000/api/v1/scan | tee mobsf-scan.json
+          curl -sf -X POST -H "Authorization: ${MOBSF_API_KEY}" \
+            -d "hash=${HASH}" \
+            http://127.0.0.1:8000/api/v1/report_json > mobsf-report.json
+
+      - name: Archive MobSF report
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: mobsf-report
+          path: mobsf-report.json
+          if-no-files-found: ignore
